@@ -35,11 +35,18 @@ jobs:
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
 
       - name: Verify artifacts
+        id: artifacts
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           ls -la ./dist
-          test -f "./dist/TiryaQLink-${VERSION}.apk"
           test -f "./dist/TiryaQLink-Setup-${VERSION}.exe"
+          FILES="./dist/TiryaQLink-Setup-${VERSION}.exe"
+          if [ -f "./dist/TiryaQLink-${VERSION}.apk" ]; then
+            FILES="${FILES}"$'\n'"./dist/TiryaQLink-${VERSION}.apk"
+          fi
+          echo "files<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$FILES" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
 
       - name: Create release
         uses: softprops/action-gh-release@v2
@@ -49,15 +56,12 @@ jobs:
           body: |
             ## TiryaQLink ${{ steps.version.outputs.version }}
 
-            ### Downloads
-            - Android APK: `TiryaQLink-${{ steps.version.outputs.version }}.apk`
-            - Windows installer: `TiryaQLink-Setup-${{ steps.version.outputs.version }}.exe`
+            ### Windows installer
+            - File: `TiryaQLink-Setup-${{ steps.version.outputs.version }}.exe`
+            - Permanent URL (app /app/version endpoint): https://github.com/${{ github.repository }}/releases/latest/download/TiryaQLink-Setup-${{ steps.version.outputs.version }}.exe
 
-            ### Permanent URLs (app /app/version endpoint)
-            - https://github.com/${{ github.repository }}/releases/latest/download/TiryaQLink-${{ steps.version.outputs.version }}.apk
-            - https://github.com/${{ github.repository }}/releases/latest/download/TiryaQLink-Setup-${{ steps.version.outputs.version }}.exe
-          files: |
-            ./dist/TiryaQLink-${{ steps.version.outputs.version }}.apk
-            ./dist/TiryaQLink-Setup-${{ steps.version.outputs.version }}.exe
+            ### Android
+            Published on Google Play.
+          files: ${{ steps.artifacts.outputs.files }}
           fail_on_unmatched_files: true
           generate_release_notes: true
