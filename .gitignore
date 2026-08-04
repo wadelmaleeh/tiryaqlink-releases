@@ -1,0 +1,9 @@
+# Build artifacts (added to tags explicitly with `git add -f dist/`)
+dist/
+*.apk
+*.exe
+*.aab
+
+# Local tooling
+.vscode/
+.idea/

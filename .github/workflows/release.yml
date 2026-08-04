@@ -1,0 +1,63 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g. 1.0.1). A matching v<version> tag must exist.'
+        required: true
+        default: '1.0.1'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ inputs.version }}"
+            TAG="v${VERSION}"
+          else
+            VERSION="${GITHUB_REF_NAME#v}"
+            TAG="${GITHUB_REF_NAME}"
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Verify artifacts
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          ls -la ./dist
+          test -f "./dist/TiryaQLink-${VERSION}.apk"
+          test -f "./dist/TiryaQLink-Setup-${VERSION}.exe"
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: TiryaQLink ${{ steps.version.outputs.version }}
+          body: |
+            ## TiryaQLink ${{ steps.version.outputs.version }}
+
+            ### Downloads
+            - Android APK: `TiryaQLink-${{ steps.version.outputs.version }}.apk`
+            - Windows installer: `TiryaQLink-Setup-${{ steps.version.outputs.version }}.exe`
+
+            ### Permanent URLs (app /app/version endpoint)
+            - https://github.com/${{ github.repository }}/releases/latest/download/TiryaQLink-${{ steps.version.outputs.version }}.apk
+            - https://github.com/${{ github.repository }}/releases/latest/download/TiryaQLink-Setup-${{ steps.version.outputs.version }}.exe
+          files: |
+            ./dist/TiryaQLink-${{ steps.version.outputs.version }}.apk
+            ./dist/TiryaQLink-Setup-${{ steps.version.outputs.version }}.exe
+          fail_on_unmatched_files: true
+          generate_release_notes: true
