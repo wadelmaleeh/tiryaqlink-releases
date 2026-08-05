@@ -15,13 +15,11 @@ permissions:
   contents: write
 
 jobs:
-  release:
+  build-and-release:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Detect version
         id: version
@@ -36,24 +34,47 @@ jobs:
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
 
-      - name: Verify artifacts
-        id: artifacts
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+
+      - name: Build Android APK
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          ls -la ./dist
-          if [ ! -f "./dist/TiryaQLink-Setup-${VERSION}.exe" ]; then
-            echo "ERROR: Windows installer not found at ./dist/TiryaQLink-Setup-${VERSION}.exe"
+          flutter build apk --release
+          mkdir -p dist
+          cp build/app/outputs/flutter-apk/app-release.apk "dist/TiryaQLink-${VERSION}.apk"
+          echo "APK built successfully"
+
+      - name: Set up Inno Setup
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y innosetup
+
+      - name: Build Windows Installer
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          mkdir -p dist
+          # Compile installer.iss with version placeholder replaced
+          sed -e "s/@VERSION@/$VERSION/g" installer.iss > temp_installer.iss
+          innosetup temp_installer.iss
+          # Move output to expected filename
+          if [ -f "Output/TiryaQLink-Setup-${VERSION}.exe" ]; then
+            mv "Output/TiryaQLink-Setup-${VERSION}.exe" "dist/TiryaQLink-Setup-${VERSION}.exe"
+          elif [ -f "Output/TiryaQLink Setup ${VERSION}.exe" ]; then
+            mv "Output/TiryaQLink Setup ${VERSION}.exe" "dist/TiryaQLink-Setup-${VERSION}.exe"
+          else
+            echo "ERROR: Inno Setup output not found"
             exit 1
           fi
-          echo "Windows installer found: ./dist/TiryaQLink-Setup-${VERSION}.exe"
-          FILES="./dist/TiryaQLink-Setup-${VERSION}.exe"
-          if [ -f "./dist/TiryaQLink-${VERSION}.apk" ]; then
-            echo "Android APK found: ./dist/TiryaQLink-${VERSION}.apk"
-            FILES="${FILES}$'\n'"./dist/TiryaQLink-${VERSION}.apk"
-          else
-            echo "Android APK not found - only Windows installer included"
-          fi
-          echo "files=$FILES" >> "$GITHUB_OUTPUT"
+          echo "Windows installer built successfully"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts
+          path: dist/
 
       - name: Create release
         uses: softprops/action-gh-release@v2
@@ -65,10 +86,12 @@ jobs:
 
             ### Windows installer
             - File: `TiryaQLink-Setup-${{ steps.version.outputs.version }}.exe`
-            - Permanent URL (app /app/version endpoint): https://github.com/${{ github.repository }}/releases/latest/download/TiryaQLink-Setup-${{ steps.version.outputs.version }}.exe
+            - Permanent URL (app /app/version endpoint): https://github.com/${{ github.repository }}/releases/latest/download/TiryaQLink-Setup-${{ steps.version.outputs.version }}.exe"
 
             ### Android
             Published on Google Play.
-          files: ${{ steps.artifacts.outputs.files }}
+          files: |
+            dist/TiryaQLink-${{ steps.version.outputs.version }}.apk
+            dist/TiryaQLink-Setup-${{ steps.version.outputs.version }}.exe
           fail_on_unmatched_files: true
           generate_release_notes: true
