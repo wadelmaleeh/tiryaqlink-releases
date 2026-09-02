@@ -48,14 +48,13 @@ jobs:
             echo "ERROR: Windows installer not found at dist/TiryaQLink-Setup-${VERSION}.exe"
             exit 1
           fi
-          echo "✓ Windows installer found: dist/TiryaQLink-Setup-${VERSION}.exe"
+          echo "Windows installer found: dist/TiryaQLink-Setup-${VERSION}.exe"
           FILES="dist/TiryaQLink-Setup-${VERSION}.exe"
           if [ -f "dist/TiryaQLink-${VERSION}.apk" ]; then
-            echo "✓ Android APK found: dist/TiryaQLink-${VERSION}.apk"
-            FILES="${FILES}
-dist/TiryaQLink-${VERSION}.apk"
+            echo "Android APK found: dist/TiryaQLink-${VERSION}.apk"
+            FILES=$(printf "%s\n%s" "$FILES" "dist/TiryaQLink-${VERSION}.apk")
           else
-            echo "ℹ Android APK not found - only Windows installer will be released"
+            echo "Android APK not found - only Windows installer will be released"
           fi
           echo "files<<EOF" >> "$GITHUB_OUTPUT"
           echo "$FILES" >> "$GITHUB_OUTPUT"
