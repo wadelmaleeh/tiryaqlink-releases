@@ -37,28 +37,29 @@ jobs:
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
 
       - name: Verify and attach artifacts
+        id: artifacts
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           echo "Checking for artifacts in tagged commit..."
           ls -la
-
-          if [ ! -d "dist" ]; then
-            echo "ERROR: dist/ directory not found in tagged commit"
-            exit 1
-          fi
+          ls -la dist || true
 
           if [ ! -f "dist/TiryaQLink-Setup-${VERSION}.exe" ]; then
             echo "ERROR: Windows installer not found at dist/TiryaQLink-Setup-${VERSION}.exe"
             exit 1
           fi
-
-          if [ ! -f "dist/TiryaQLink-${VERSION}.apk" ]; then
-            echo "ERROR: Android APK not found at dist/TiryaQLink-${VERSION}.apk"
-            exit 1
-          fi
-
           echo "✓ Windows installer found: dist/TiryaQLink-Setup-${VERSION}.exe"
-          echo "✓ Android APK found: dist/TiryaQLink-${VERSION}.apk"
+          FILES="dist/TiryaQLink-Setup-${VERSION}.exe"
+          if [ -f "dist/TiryaQLink-${VERSION}.apk" ]; then
+            echo "✓ Android APK found: dist/TiryaQLink-${VERSION}.apk"
+            FILES="${FILES}
+dist/TiryaQLink-${VERSION}.apk"
+          else
+            echo "ℹ Android APK not found - only Windows installer will be released"
+          fi
+          echo "files<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$FILES" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
 
       - name: Create release
         uses: softprops/action-gh-release@v2
@@ -70,12 +71,10 @@ jobs:
 
             ### Windows installer
             - File: `TiryaQLink-Setup-${{ steps.version.outputs.version }}.exe`
-            - Permanent URL (app /app/version endpoint): https://github.com/${{ github.repository }}/releases/latest/download/TiryaQLink-Setup-${{ steps.version.outputs.version }}.exe"
+            - Permanent URL (app /app/version endpoint): https://github.com/${{ github.repository }}/releases/latest/download/TiryaQLink-Setup-${{ steps.version.outputs.version }}.exe
 
             ### Android
             Published on Google Play.
-          files: |
-            dist/TiryaQLink-${{ steps.version.outputs.version }}.apk
-            dist/TiryaQLink-Setup-${{ steps.version.outputs.version }}.exe
+          files: ${{ steps.artifacts.outputs.files }}
           fail_on_unmatched_files: true
           generate_release_notes: true
