@@ -1,18 +1,18 @@
 # TiryaQLink Releases
 
-Hosts the Windows release installer and Android APK for the TiryaQLink app. Every release is created automatically by the [GitHub Actions workflow](.github/workflows/release.yml) when a `v<version>` tag (e.g. `v1.0.7`) is pushed.
+Hosts the Windows release installer and Android APK for the TiryaQLink app. Every release is created automatically by the [GitHub Actions workflow](.github/workflows/release.yml) when a `v<version>` tag (e.g. `v1.0.8`) is pushed.
 
 ## Permanent download URLs
 
 These URLs always point to the **newest** release (the latest tag), so the app's `/app/version` endpoint can use them as fixed, never-changing links:
 
 - **Windows installer EXE**
-  `https://github.com/wadelmaleeh/tiryaqlink-releases/releases/latest/download/TiryaQLink-Setup-1.0.7.exe`
+  `https://github.com/wadelmaleeh/tiryaqlink-releases/releases/latest/download/TiryaQLink-Setup-1.0.8.exe`
 
 - **Android APK**
-  `https://github.com/wadelmaleeh/tiryaqlink-releases/releases/latest/download/TiryaQLink-1.0.7.apk`
+  `https://github.com/wadelmaleeh/tiryaqlink-releases/releases/latest/download/TiryaQLink-1.0.8.apk`
 
-> Replace `1.0.7` with the version you are downloading. The `latest` part of each URL always resolves to the newest tagged release, so these links never need to be updated when a new version ships.
+> Replace `1.0.8` with the version you are downloading. The `latest` part of each URL always resolves to the newest tagged release, so these links never need to be updated when a new version ships.
 
 ## How it works
 
